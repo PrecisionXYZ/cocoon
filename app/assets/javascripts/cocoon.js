@@ -14,24 +14,24 @@
     return '_' + id + '_$1';
   }
 
-  var getInsertionNodeElem = function(insertionNode, insertionTraversal, $this){
+  var getNodeElem = function(node, traversalMethod, $this){
 
-    if (!insertionNode){
+    if (!node){
       return $this.parent();
     }
 
-    if (typeof insertionNode == 'function'){
-      if(insertionTraversal){
-        console.warn('association-insertion-traversal is ignored, because association-insertion-node is given as a function.')
+    if (typeof node == 'function'){
+      if(traversalMethod){
+        console.warn('Traversal method is ignored, because node is given as a function.')
       }
-      return insertionNode($this);
+      return node($this);
     }
 
-    if(typeof insertionNode == 'string'){
-      if (insertionTraversal){
-        return $this[insertionTraversal](insertionNode);
+    if(typeof node == 'string'){
+      if (traversalMethod){
+        return $this[traversalMethod](node);
       }else{
-        return insertionNode == "this" ? $this : $(insertionNode);
+        return node == "this" ? $this : $(node);
       }
     }
 
@@ -75,7 +75,7 @@
       count -= 1;
     }
 
-    var insertionNodeElem = getInsertionNodeElem(insertionNode, insertionTraversal, $this)
+    var insertionNodeElem = getNodeElem(insertionNode, insertionTraversal, $this)
 
     if( !insertionNodeElem || (insertionNodeElem.length == 0) ){
       console.warn("Couldn't find the element to insert the template. Make sure your `data-association-insertion-*` on `link_to_add_association` is correct.")
@@ -99,27 +99,42 @@
   });
 
   $(document).on('click', '.remove_fields.dynamic, .remove_fields.existing', function(e) {
-    var $this = $(this),
-        wrapper_class = $this.data('wrapper-class') || 'nested-fields',
-        node_to_delete = $this.closest('.' + wrapper_class),
-        trigger_node = node_to_delete.parent();
+    var $this            = $(this),
+        removalNode      = null,
+        removalTraversal = null;
 
     e.preventDefault();
 
+    if( typeof $this.data('association-removal-node') != 'undefined' ) {
+      removalNode      = $this.data('association-removal-node');
+    } else {
+      removalNode      = $this.data('wrapper-class') || '.nested-fields';
+      removalTraversal = $this.data('association-removal-traversal') || 'closest';
+    }
+
+    var removalNodeElem = getNodeElem(removalNode, removalTraversal, $this);
+
+    if( !removalNodeElem || (removalNodeElem.length == 0) ){
+      console.warn("Couldn't find the element to remove. Make sure your `data-association-removal-*` on `link_to_remove_association` is correct.")
+    }
+
+    //var node_to_delete   = $this.closest('.' + wrapper_class);
+    var trigger_node = removalNodeElem.parent();
     var before_remove = jQuery.Event('cocoon:before-remove');
-    trigger_node.trigger(before_remove, [node_to_delete]);
+
+    trigger_node.trigger(before_remove, [removalNodeElem]);
 
     if (!before_remove.isDefaultPrevented()) {
       var timeout = trigger_node.data('remove-timeout') || 0;
 
       setTimeout(function() {
         if ($this.hasClass('dynamic')) {
-            node_to_delete.detach();
+            removalNodeElem.detach();
         } else {
             $this.prev("input[type=hidden]").val("1");
-            node_to_delete.hide();
+            removalNodeElem.hide();
         }
-        trigger_node.trigger('cocoon:after-remove', [node_to_delete]);
+        trigger_node.trigger('cocoon:after-remove', [removalNodeElem]);
       }, timeout);
     }
   });
@@ -128,9 +143,9 @@
   $(document).on("ready page:load turbolinks:load", function() {
     $('.remove_fields.existing.destroyed').each(function(i, obj) {
       var $this = $(this),
-          wrapper_class = $this.data('wrapper-class') || 'nested-fields';
+          wrapper_class = $this.data('wrapper-class') || '.nested-fields';
 
-      $this.closest('.' + wrapper_class).hide();
+      $this.closest(wrapper_class).hide();
     });
   });
 
