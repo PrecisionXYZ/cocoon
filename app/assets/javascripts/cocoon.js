@@ -6,12 +6,8 @@
     return (new Date().getTime() + cocoon_element_counter++);
   }
 
-  var newcontent_braced = function(id) {
-    return '[' + id + ']$1';
-  }
-
-  var newcontent_underscord = function(id) {
-    return '_' + id + '_$1';
+  var newcontent = function(id) {
+    return id + '$1';
   }
 
   var getNodeElem = function(node, traversalMethod, $this){
@@ -47,20 +43,17 @@
         insertionNode         = $this.data('association-insertion-node'),
         insertionTraversal    = $this.data('association-insertion-traversal'),
         count                 = parseInt($this.data('count'), 10),
-        regexp_braced         = new RegExp('\\[new_' + assoc + '\\](.*?\\s)', 'g'),
-        regexp_underscord     = new RegExp('_new_' + assoc + '_(\\w*)', 'g'),
+        regexp_insert_id      = new RegExp('new_' + assocs + '(.*?\\s)', 'g'),
         new_id                = create_new_id(),
-        new_content           = content.replace(regexp_braced, newcontent_braced(new_id)),
+        new_content           = content.replace(regexp_insert_id, newcontent(new_id)),
         new_contents          = [];
 
 
     if (new_content == content) {
-      regexp_braced     = new RegExp('\\[new_' + assocs + '\\](.*?\\s)', 'g');
-      regexp_underscord = new RegExp('_new_' + assocs + '_(\\w*)', 'g');
-      new_content       = content.replace(regexp_braced, newcontent_braced(new_id));
+      regexp_insert_id = new RegExp('new_' + assoc + '(.*?\\s)', 'g');
+      new_content      = content.replace(regexp_insert_id, newcontent(new_id));
     }
 
-    new_content = new_content.replace(regexp_underscord, newcontent_underscord(new_id));
     new_contents = [new_content];
 
     count = (isNaN(count) ? 1 : Math.max(count, 1));
@@ -68,8 +61,7 @@
 
     while (count) {
       new_id      = create_new_id();
-      new_content = content.replace(regexp_braced, newcontent_braced(new_id));
-      new_content = new_content.replace(regexp_underscord, newcontent_underscord(new_id));
+      new_content = content.replace(regexp_insert_id, newcontent(new_id));
       new_contents.push(new_content);
 
       count -= 1;
